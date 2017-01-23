@@ -1,13 +1,18 @@
 {
   "version": "1.0.0-*",
   "buildOptions": {
-    "debugType": "portable"
+    "debugType": "portable",
+    "copyToOutput": {
+      "includeFiles": ["./version_manifest.json"]
+    }
   },
   "dependencies": {
     "System.Runtime.Serialization.Primitives": "4.3.0",
     "xunit": "2.1.0",
     "dotnet-test-xunit": "1.0.0-rc2-build10015",
     "Moq": "4.6.38-alpha",
+    "RichardSzalay.MockHttp": "1.4.1",
+    "System.IO": "4.3.0",
     "library": {
       "target": "project"
     }

@@ -1,73 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Threading.Tasks;
 using System.Net.Http;
 using Newtonsoft.Json;
 
 namespace MMCTools
 {
-    public struct LatestVersions
-    {
-        public string snapshot;
-        public string release;
-    }
-
-    public struct MinecraftVersion
-    {
-        public string id;
-        public string type;
-        public DateTime time;
-        public DateTime releaseTime;
-        public Uri url;
-    }
-
-    public struct ManifestData
-    {
-        public LatestVersions latest;
-        public List<MinecraftVersion> versions;
-    }
-
     public sealed class Manifest
     {
-        private const string sourceURI = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-        private static volatile Manifest instance;
-        private static object syncRoot = new Object();
+        public const string SOURCE_URI = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 
-        public static Manifest Instance
+        public ManifestData Data { get; private set; }
+        public MinecraftVersion LatestRelease { get { return this.Data.LatestRelease; } }
+        public MinecraftVersion LatestSnapshot { get { return this.Data.LatestSnapshot; } }
+
+        private HttpClient client;
+        public HttpClient Client
         {
-            get
-            {
-                if (instance == null)
-                {
-                    lock (syncRoot)
-                    {
-                        if (instance == null)
-                            instance = new Manifest();
-                    }
-                }
+            get { return this.client; }
 
-                return instance;
+            set
+            {
+                if (this.client != null)
+                    this.client.Dispose();
+
+                this.client = value;
             }
         }
 
-        public ManifestData data
+        public Manifest() : this(true) { }
+
+        public Manifest(bool autoFetch)
         {
-            get;
-            private set;
+            this.client = new HttpClient();
+            if (autoFetch)
+                this.Fetch().Wait();
         }
 
-        private Manifest()
+        public async Task Fetch()
         {
-            this.fetch();
-        }
-
-        public async void fetch()
-        {
-            HttpClient client = new HttpClient();
-            HttpResponseMessage resp = await client.GetAsync(sourceURI);
+            HttpResponseMessage resp = await this.Client.GetAsync(SOURCE_URI);
             resp.EnsureSuccessStatusCode();
 
             string bodyJson = await resp.Content.ReadAsStringAsync();
-            this.data = JsonConvert.DeserializeObject<ManifestData>(bodyJson);
+            this.Data = JsonConvert.DeserializeObject<ManifestData>(bodyJson);
+        }
+
+        public MinecraftVersion GetVersion(string id)
+        {
+            return this.Data.GetVersion(id);
         }
     }
 }
